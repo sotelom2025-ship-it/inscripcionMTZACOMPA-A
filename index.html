@@ -201,27 +201,70 @@
 
   .success-screen {
     text-align: center;
-    padding: 40px 20px;
+    padding: 32px 20px 24px;
   }
   .success-icon {
-    width: 80px; height: 80px;
-    background: #d1fae5;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    margin: 0 auto 20px;
-    font-size: 40px;
+    font-size: 56px;
+    margin-bottom: 16px;
+    line-height: 1;
   }
   .success-screen h2 {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     font-weight: 800;
     color: var(--verde);
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
-  .success-screen p {
+  .success-screen > p {
     color: var(--gris);
-    font-size: 0.95rem;
-    line-height: 1.6;
+    font-size: 0.93rem;
+    margin-bottom: 24px;
   }
+  .resumen-card {
+    background: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 18px 20px;
+    text-align: left;
+    margin-bottom: 20px;
+  }
+  .resumen-card .resumen-titulo {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--gris);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .resumen-fila {
+    display: flex;
+    gap: 8px;
+    font-size: 0.88rem;
+    margin-bottom: 9px;
+    align-items: baseline;
+  }
+  .resumen-fila:last-child { margin-bottom: 0; }
+  .resumen-label {
+    font-weight: 700;
+    color: var(--negro);
+    white-space: nowrap;
+    min-width: 130px;
+  }
+  .resumen-valor { color: #374151; }
+  .btn-nueva {
+    width: 100%;
+    background: var(--azul);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 13px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-nueva:hover { background: var(--azul-light); }
 
   .hint {
     font-size: 0.8rem;
@@ -329,9 +372,29 @@
   <!-- ÉXITO -->
   <div class="section" id="paso4">
     <div class="card success-screen">
-      <div class="success-icon">✓</div>
-      <h2>¡Inscripción realizada con éxito!</h2>
-      <p>Los datos de tu familia fueron registrados correctamente.</p>
+      <div class="success-icon">✅</div>
+      <h2>¡Registro enviado con éxito!</h2>
+      <p>Los datos fueron guardados correctamente.</p>
+      <div class="resumen-card">
+        <div class="resumen-titulo">Resumen</div>
+        <div class="resumen-fila">
+          <span class="resumen-label">Adulto:</span>
+          <span class="resumen-valor" id="res-adulto">—</span>
+        </div>
+        <div class="resumen-fila">
+          <span class="resumen-label">Localidad:</span>
+          <span class="resumen-valor" id="res-localidad">—</span>
+        </div>
+        <div class="resumen-fila">
+          <span class="resumen-label">Escuela origen:</span>
+          <span class="resumen-valor" id="res-escuela">—</span>
+        </div>
+        <div class="resumen-fila">
+          <span class="resumen-label">Hijxs registradxs:</span>
+          <span class="resumen-valor" id="res-hijos">—</span>
+        </div>
+      </div>
+      <button class="btn-nueva" onclick="reiniciarFormulario()">Registrar otra familia</button>
     </div>
   </div>
 
@@ -484,7 +547,7 @@ async function enviarFormulario() {
   const timeout = setTimeout(function() {
     delete window[callbackName];
     if (script.parentNode) document.body.removeChild(script);
-    // Con no-cors el timeout no implica error — igual mostramos éxito
+    mostrarResumen(payload);
     activarPaso(4);
   }, 6000);
 
@@ -492,17 +555,46 @@ async function enviarFormulario() {
     clearTimeout(timeout);
     delete window[callbackName];
     if (script.parentNode) document.body.removeChild(script);
+    mostrarResumen(payload);
     activarPaso(4);
   };
 
   script.onerror = function() {
     clearTimeout(timeout);
     delete window[callbackName];
-    // Igual intentamos mostrar éxito porque puede haber guardado igual
+    mostrarResumen(payload);
     activarPaso(4);
   };
 
   document.body.appendChild(script);
+}
+
+function mostrarResumen(p) {
+  const nombre = p.adulto_nombre || '—';
+  const dni    = p.adulto_dni    || '';
+  document.getElementById('res-adulto').textContent    = nombre + (dni ? ' — DNI ' + dni : '');
+  document.getElementById('res-localidad').textContent = p.adulto_localidad      || '—';
+  document.getElementById('res-escuela').textContent   = (p.escuela_origen_tipo || '') + (p.escuela_origen_numero ? ' N° ' + p.escuela_origen_numero : '');
+  document.getElementById('res-hijos').textContent     = (p.hijos && p.hijos.length) ? p.hijos.length : '—';
+}
+
+function reiniciarFormulario() {
+  // Limpiar campos del adulto
+  ['adulto_nombre','adulto_dni','adulto_direccion','adulto_telefono'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('adulto_localidad').value = '';
+  document.getElementById('tipo_escuela_origen').value = '';
+  document.getElementById('numero_escuela_origen').value = '';
+  document.getElementById('bloque_numero_origen').style.display = 'none';
+  // Limpiar hijos
+  document.getElementById('hijos-container').innerHTML = '';
+  hijoCount = 0;
+  // Volver al paso 1
+  activarPaso(1);
+  document.getElementById('btn1').disabled = true;
+  window.scrollTo(0, 0);
 }
 </script>
 </body>
