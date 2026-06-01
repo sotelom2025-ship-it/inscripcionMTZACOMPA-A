@@ -468,7 +468,7 @@
 </div>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbza_QMlM6lWFH3jgd0ZYct31loOBhq9SRdRmwKkEFyKTn5ncfgzQKR8vpOyEKCZCX2v/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbytniYWDATbqBYSE6RaJc9kZyaV8RRVYSaF-snXcDNikBQJOoAxf9MLEnI-FAoJ9_A-/exec";
 
 let hijoCount = 0;
 let perfilActual = 'adulto'; // 'adulto' o 'estudiante'
@@ -679,12 +679,12 @@ async function enviarFormulario() {
     } catch(e) {}
   }, 300);
 
-  // Enviar al servidor vía POST (no hay límite de tamaño, sin CORS issues con no-cors)
+  // Enviar via POST con text/plain (evita preflight CORS que bloquea Apps Script)
   try {
     fetch(SCRIPT_URL, {
       method: 'POST',
       mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify(payload)
     });
   } catch(e) {}
