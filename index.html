@@ -441,7 +441,7 @@
           <span class="resumen-label">Escuela origen:</span>
           <span class="resumen-valor" id="res-escuela">—</span>
         </div>
-        <div class="resumen-fila">
+        <div class="resumen-fila" id="res-hijos-row">
           <span class="resumen-label">Hijxs registradxs:</span>
           <span class="resumen-valor" id="res-hijos">—</span>
         </div>
@@ -642,34 +642,28 @@ async function enviarFormulario() {
   btn.disabled = true;
   btn.textContent = 'Enviando...';
 
-  const callbackName = 'inscripcionCallback_' + Date.now();
-  const script = document.createElement('script');
-  const params = encodeURIComponent(JSON.stringify(payload));
-  script.src = SCRIPT_URL + '?accion=inscribir&data=' + params + '&callback=' + callbackName;
+  // Mostrar resultado inmediatamente sin esperar al servidor
+  mostrarResumen(payload);
+  activarPaso(4);
 
-  const timeout = setTimeout(function() {
-    delete window[callbackName];
-    if (script.parentNode) document.body.removeChild(script);
-    mostrarResumen(payload);
-    activarPaso(4);
-  }, 6000);
-
-  window[callbackName] = function(resp) {
-    clearTimeout(timeout);
-    delete window[callbackName];
-    if (script.parentNode) document.body.removeChild(script);
-    mostrarResumen(payload);
-    activarPaso(4);
-  };
-
-  script.onerror = function() {
-    clearTimeout(timeout);
-    delete window[callbackName];
-    mostrarResumen(payload);
-    activarPaso(4);
-  };
-
-  document.body.appendChild(script);
+  // Enviar al servidor en segundo plano (no bloquea el flujo)
+  if (SCRIPT_URL && !SCRIPT_URL.includes('TU_URL')) {
+    try {
+      const callbackName = 'inscripcionCallback_' + Date.now();
+      const script = document.createElement('script');
+      const params = encodeURIComponent(JSON.stringify(payload));
+      script.src = SCRIPT_URL + '?accion=inscribir&data=' + params + '&callback=' + callbackName;
+      window[callbackName] = function() {
+        delete window[callbackName];
+        try { if (script.parentNode) document.body.removeChild(script); } catch(e) {}
+      };
+      script.onerror = function() {
+        delete window[callbackName];
+      };
+      setTimeout(function() { delete window[callbackName]; }, 15000);
+      document.body.appendChild(script);
+    } catch(e) {}
+  }
 }
 
 function mostrarResumen(p) {
@@ -678,7 +672,12 @@ function mostrarResumen(p) {
   document.getElementById('res-adulto').textContent    = nombre + (dni ? ' \u2014 DNI ' + dni : '');
   document.getElementById('res-localidad').textContent = p.adulto_localidad || '\u2014';
   document.getElementById('res-escuela').textContent   = (p.escuela_origen_tipo || '') + (p.escuela_origen_numero ? ' N\xb0 ' + p.escuela_origen_numero : '');
-  document.getElementById('res-hijos').textContent     = (p.hijos && p.hijos.length) ? p.hijos.length : '\u2014';
+  if (perfilActual === 'estudiante') {
+    document.getElementById('res-hijos-row').style.display = 'none';
+  } else {
+    document.getElementById('res-hijos-row').style.display = '';
+    document.getElementById('res-hijos').textContent = (p.hijos && p.hijos.length) ? p.hijos.length : '\u2014';
+  }
 }
 
 function reiniciarFormulario() {
