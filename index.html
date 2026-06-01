@@ -678,19 +678,14 @@ async function enviarFormulario() {
     } catch(e) {}
   }, 300);
 
-  // Enviar al servidor en segundo plano
+  // Enviar al servidor vía POST (no hay límite de tamaño, sin CORS issues con no-cors)
   try {
-    const callbackName = 'inscripcionCallback_' + Date.now();
-    const script = document.createElement('script');
-    const params = encodeURIComponent(JSON.stringify(payload));
-    script.src = SCRIPT_URL + '?accion=inscribir&data=' + params + '&callback=' + callbackName;
-    window[callbackName] = function() {
-      delete window[callbackName];
-      try { if (script.parentNode) document.body.removeChild(script); } catch(e) {}
-    };
-    script.onerror = function() { delete window[callbackName]; };
-    setTimeout(function() { delete window[callbackName]; }, 15000);
-    document.body.appendChild(script);
+    fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
   } catch(e) {}
 }
 
